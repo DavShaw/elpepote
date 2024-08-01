@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -8,6 +9,13 @@ from config import Config
 from notifications import Notifications
 from werkzeug.security import generate_password_hash, check_password_hash
 import pyotp
+
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, DateField, TimeField, TextAreaField, SelectField
+from wtforms.validators import DataRequired, Email
+from flask_wtf import FlaskForm
+from wtforms import StringField, IntegerField, SelectField, SubmitField
+from wtforms.validators import DataRequired
 
 import os
 import pyotp
@@ -30,6 +38,12 @@ login_manager.init_app(app)
 
 with app.app_context():
     db.create_all()
+
+def date_today_plus_one():
+    return (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%d')
+
+def time_now_plus_one():
+    return (datetime.now() + timedelta(hours=2)).strftime('%H:%M')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -189,37 +203,46 @@ def user_panel():
 @login_required
 def request_appointments():
     form = AppointmentForm()
-    form.doctor_id.choices = [(doctor.dni, doctor.name) for doctor in Doctor.query.all()]
+    doctors = Doctor.query.all()
+    form.doctor_id.choices = [(doctor.dni, doctor.name) for doctor in doctors]
     form.patient_id.choices = [(current_user.dni, current_user.name)]
+    
     if form.validate_on_submit():
-        appointment = Appointment(
-            date=form.date.data, 
-            time=form.time.data, 
-            reason=form.reason.data, 
-            doctor_id=form.doctor_id.data, 
-            patient_id=current_user.dni
-        )
-        db.session.add(appointment)
-        db.session.commit()
-        flash('Appointment requested successfully')
+        try:
+            appointment = Appointment(
+                date=form.date.data,
+                time=form.time.data,
+                reason=form.reason.data,
+                doctor_id=form.doctor_id.data,
+                patient_id=current_user.dni
+            )
+            db.session.add(appointment)
+            db.session.commit()
+            flash('Appointment requested successfully')
 
-        # Notification block
-        patient = Patient.query.get(form.patient_id.data)
-        if patient:
-            notify = Notifications()
-            notify.format_email(
-                date=form.date.data, 
-                time=form.time.data, 
-                reason=form.reason.data, 
-                doctor=form.doctor_id.data, 
-                patient=form.patient_id.data)
-            notify.send_email(to_address=patient.email)
+            # Notification block
+            patient = Patient.query.get(form.patient_id.data)
+            if patient:
+                notify = Notifications()
+                notify.format_email(
+                    date=form.date.data,
+                    time=form.time.data,
+                    reason=form.reason.data,
+                    doctor=form.doctor_id.data,
+                    patient=form.patient_id.data
+                )
+                notify.send_email(to_address=patient.email)
 
-        return redirect(url_for('user_panel'))
-
-
+            return redirect(url_for('user_panel'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'An error occurred: {str(e)}')
+    
     # template
-    return render_template('user/request_appointments.html', form=form)
+    min_date = date_today_plus_one()
+    min_time = time_now_plus_one()
+    return render_template('user/request_appointments.html', form=form, doctors=doctors, min_date=min_date, min_time=min_time)
+
 
 # endpoint
 @app.route('/user/view_appointments')

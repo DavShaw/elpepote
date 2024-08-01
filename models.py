@@ -3,37 +3,46 @@ from enum import Enum
 from sqlalchemy import Enum as SqlEnum
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+from datetime import datetime, timedelta
+from wtforms.validators import DataRequired
+from wtforms import DateField, TimeField, TextAreaField, SelectField
 
 db = SQLAlchemy()
 
+def date_today_plus_one():
+    return (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+def time_now_plus_one():
+    return (datetime.now() + timedelta(hours=1)).strftime('%H:%M')
+
+
 class SpecialtyEnum(Enum):
-    GENERAL = 'general'
-    GYNECOLOGY = 'gynecology'
-    NEUROLOGY = 'neurology'
-    DENTISTRY = 'dentistry'
-    CARDIOLOGY = 'cardiology'
-    ORTHOPEDICS = 'orthopedics'
-    ONCOLOGY = 'oncology'
-    PEDIATRICS = 'pediatrics'
-    PSYCHIATRY = 'psychiatry'
-    RHEUMATOLOGY = 'rheumatology'
-    ENDOCRINOLOGY = 'endocrinology'
-    PULMONOLOGY = 'pulmonology'
-    GASTROENTEROLOGY = 'gastroenterology'
-    HEMATOLOGY = 'hematology'
-    INFECTIOUS_DISEASES = 'infectious diseases'
-    NEPHROLOGY = 'nephrology'
-    OPHTHALMOLOGY = 'ophthalmology'
-    OTOLARYNGOLOGY = 'otolaryngology'
-    UROLOGY = 'urology'
-    ALLERGY_AND_IMMUNOLOGY = 'allergy and immunology'
-    ANESTHESIOLOGY = 'anesthesiology'
-    EMERGENCY_MEDICINE = 'emergency medicine'
-    MEDICAL_GENETICS = 'medical genetics'
-    INTERNAL_MEDICINE = 'internal medicine'
-    RADIOLOGY = 'radiology'
-    SURGERY = 'surgery'
-    TRAUMA = 'trauma'
+    general = 'general'
+    gynecology = 'gynecology'
+    neurology = 'neurology'
+    dentistry = 'dentistry'
+    cardiology = 'cardiology'
+    orthopedics = 'orthopedics'
+    oncology = 'oncology'
+    pediatrics = 'pediatrics'
+    psychiatry = 'psychiatry'
+    rheumatology = 'rheumatology'
+    endocrinology = 'endocrinology'
+    pulmonology = 'pulmonology'
+    gastroenterology = 'gastroenterology'
+    hematology = 'hematology'
+    infectious_diseases = 'infectious diseases'
+    nephrology = 'nephrology'
+    ophthalmology = 'ophthalmology'
+    otolaryngology = 'otolaryngology'
+    urology = 'urology'
+    allergy_and_immunology = 'allergy and immunology'
+    anesthesiology = 'anesthesiology'
+    emergency_medicine = 'emergency medicine'
+    medical_genetics = 'medical genetics'
+    internal_medicine = 'internal medicine'
+    radiology = 'radiology'
+    surgery = 'surgery'
+    trauma = 'trauma'
 
 
 class Doctor(db.Model):
@@ -57,9 +66,9 @@ class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
-    reason = db.Column(db.Text, nullable=False)
+    reason = db.Column(db.String(255), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctor.dni'), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.dni'), nullable=False)
 
-    doctor = db.relationship('Doctor', backref='appointments')
-    patient = db.relationship('Patient', backref='appointments')
+    def __repr__(self):
+        return f'<Appointment {self.id}>'
